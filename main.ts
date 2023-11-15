@@ -1,154 +1,123 @@
 import {
     App,
     Editor,
+    EditorPosition,
+    FileManager,
     MarkdownView,
-    Modal,
-    Notice,
     Plugin,
-    PluginSettingTab,
-    Setting,
+    MarkdownFileInfo,
+    TFile,
+    Workspace,
 } from "obsidian";
 
-// Remember to rename these classes and interfaces!
-
-interface MyPluginSettings {
-    mySetting: string;
+interface ClickableToken {
+    type: string;
+    text: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-    mySetting: "default",
-};
+abstract class EditorExtended extends Editor {
+    abstract getClickableTokenAt(position: EditorPosition): ClickableToken;
+}
+
+abstract class AppExtended extends App {
+    commands: {
+        executeCommandById(id: string): void;
+    };
+    workspace: WorkspaceExtended;
+    fileManager: FileManagerExtended;
+}
+
+abstract class FileManagerExtended extends FileManager {
+    abstract promptForFileRename(file: TFile): void;
+}
+
+abstract class WorkspaceExtended extends Workspace {
+    activeEditor: MarkdownFileInfoExtended;
+}
+
+interface MarkdownFileInfoExtended extends MarkdownFileInfo {
+    getFile(): { path: string };
+}
 
 export default class ContextAwareRenamePlugin extends Plugin {
-    settings: MyPluginSettings;
+    app: AppExtended;
 
     async onload() {
-        await this.loadSettings();
-
-        // This creates an icon in the left ribbon.
-        const ribbonIconEl = this.addRibbonIcon(
-            "dice",
-            "Sample Plugin",
-            (evt: MouseEvent) => {
-                // Called when the user clicks the icon.
-                new Notice("This is a notice!");
-            }
-        );
-        // Perform additional things with the ribbon
-        ribbonIconEl.addClass("my-plugin-ribbon-class");
-
-        // This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-        const statusBarItemEl = this.addStatusBarItem();
-        statusBarItemEl.setText("Status Bar Text");
-
-        // This adds a simple command that can be triggered anywhere
-        this.addCommand({
-            id: "open-sample-modal-simple",
-            name: "Open sample modal (simple)",
-            callback: () => {
-                new SampleModal(this.app).open();
-            },
-        });
         // This adds an editor command that can perform some operation on the current editor instance
         this.addCommand({
-            id: "sample-editor-command",
-            name: "Sample editor command",
-            editorCallback: (editor: Editor, view: MarkdownView) => {
-                console.log(editor.getSelection());
-                editor.replaceSelection("Sample Editor Command");
-            },
+            id: "rename-file-or-link",
+            name: "File or Link",
+            editorCallback: this.renameFileOrLink.bind(this),
         });
-        // This adds a complex command that can check whether the current state of the app allows execution of the command
-        this.addCommand({
-            id: "open-sample-modal-complex",
-            name: "Open sample modal (complex)",
-            checkCallback: (checking: boolean) => {
-                // Conditions to check
-                const markdownView =
-                    this.app.workspace.getActiveViewOfType(MarkdownView);
-                if (markdownView) {
-                    // If checking is true, we're simply "checking" if the command can be run.
-                    // If checking is false, then we want to actually perform the operation.
-                    if (!checking) {
-                        new SampleModal(this.app).open();
-                    }
+    }
 
-                    // This command will only show up in Command Palette when the check function returns true
-                    return true;
-                }
-            },
-        });
+    /**
+     * The function `renameFileOrLink` renames a file or triggers a rename dialog for a link in a
+     * Markdown editor.
+     * @param {EditorExtended} editor - The `editor` parameter is an instance of the `EditorExtended`
+     * class, which represents the editor in which the code is being executed. It provides methods for
+     * interacting with the editor, such as getting the current cursor position and getting the
+     * clickable token at a specific position.
+     * @param {MarkdownView} view - The `view` parameter is an object of type `MarkdownView`. It
+     * represents the current markdown view in the application and provides methods and properties
+     * related to the view, such as getting the current cursor position and the clickable token at the
+     * cursor position.
+     * @returns the result of calling `this.app.fileManager.promptForFileRename(link)`.
+     */
+    renameFileOrLink(editor: EditorExtended, view: MarkdownView) {
+        const cursorPosition = editor.getCursor();
+        const token = editor.getClickableTokenAt(cursorPosition);
 
-        // This adds a settings tab so the user can configure various aspects of the plugin
-        this.addSettingTab(new SampleSettingTab(this.app, this));
+        if (!token) {
+            // rename file since we are not on top of a link
+            this.app.commands.executeCommandById("workspace:edit-file-title");
 
-        // If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-        // Using this function will automatically remove the event listener when this plugin is disabled.
-        this.registerDomEvent(document, "click", (evt: MouseEvent) => {
-            console.log("click", evt);
-        });
+            return;
+        }
 
-        // When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-        this.registerInterval(
-            window.setInterval(() => console.log("setInterval"), 5 * 60 * 1000)
+        // ignore external links
+        // TODO: actually trigger "edit link" command
+        if (token.type !== "internal-link") {
+            return;
+        }
+
+        const linkPath = this.normalize(token.text).path;
+        const { path: filePath } = this.app.workspace.activeEditor.getFile();
+
+        // get the link object itself
+        const link = this.app.metadataCache.getFirstLinkpathDest(
+            linkPath,
+            filePath
         );
+
+        if (!link) {
+            return;
+        }
+
+        // call to trigger a rename dialog for the link we found
+        return this.app.fileManager.promptForFileRename(link);
+    }
+
+    /**
+     * The `normalize` function takes a string value, replaces non-breaking spaces with regular spaces,
+     * normalizes the string using the "NFC" normalization form, splits the string at the "#"
+     * character, and returns an object with the path and subpath.
+     * @param {string} value - A string value that represents a path or URL.
+     * @returns The function `normalize` returns an object with two properties: `path` and `subpath`.
+     */
+    normalize(value: string): { path: string; subpath: string } {
+        // this replaces a non-breaking space with a regular one
+        const nonBreakingSpace = /\u00A0/g;
+
+        value = value.replace(nonBreakingSpace, " ").normalize("NFC");
+
+        const path = value.split("#")[0];
+
+        return {
+            path,
+            subpath: value.substring(path.length),
+        };
     }
 
     onunload() {}
-
-    async loadSettings() {
-        this.settings = Object.assign(
-            {},
-            DEFAULT_SETTINGS,
-            await this.loadData()
-        );
-    }
-
-    async saveSettings() {
-        await this.saveData(this.settings);
-    }
-}
-
-class SampleModal extends Modal {
-    constructor(app: App) {
-        super(app);
-    }
-
-    onOpen() {
-        const { contentEl } = this;
-        contentEl.setText("Woah!");
-    }
-
-    onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
-    }
-}
-
-class SampleSettingTab extends PluginSettingTab {
-    plugin: ContextAwareRenamePlugin;
-
-    constructor(app: App, plugin: ContextAwareRenamePlugin) {
-        super(app, plugin);
-        this.plugin = plugin;
-    }
-
-    display(): void {
-        const { containerEl } = this;
-
-        containerEl.empty();
-
-        new Setting(containerEl)
-            .setName("Setting #1")
-            .setDesc("It's a secret")
-            .addText((text) =>
-                text
-                    .setPlaceholder("Enter your secret")
-                    .setValue(this.plugin.settings.mySetting)
-                    .onChange(async (value) => {
-                        this.plugin.settings.mySetting = value;
-                        await this.plugin.saveSettings();
-                    })
-            );
-    }
 }
