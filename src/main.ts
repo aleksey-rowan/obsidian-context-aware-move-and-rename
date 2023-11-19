@@ -76,12 +76,9 @@ export default class ContextAwareRenamePlugin extends Plugin {
                 editor.setSelection(token.start, token.end);
             },
             [linkTypeEnum.internal]: () => {
-                const linkTFile = this.getLinkTFile(token);
-
                 // abort if we can't find the link object for some reason
-                if (!linkTFile) {
-                    return;
-                }
+                const linkTFile = this.getLinkTFile(token);
+                if (!linkTFile) return;
 
                 // call to trigger a rename dialog for the link we found
                 this.app.fileManager.promptForFileRename(linkTFile);
@@ -91,11 +88,20 @@ export default class ContextAwareRenamePlugin extends Plugin {
         linkTypes[token.type]();
     }
 
+    /**
+     * Moves a file or updates a link based on the token type.
+     * @param {EditorExtended} editor - The `editor` parameter is an instance of the `EditorExtended`
+     * class, which represents the current editor in the application.
+     * @param [linkOnly=false] - The `linkOnly` parameter is a boolean flag that determines whether
+     * only the links should be moved or both the links and the file itself.
+     * @returns nothing (void).
+     */
     private moveFileOrLink(
         editor: EditorExtended,
         v: MarkdownFileInfo,
         linkOnly = false
     ) {
+        // TODO: consider mass link manipulation using selection
         const token = this.getClickableToken(editor);
 
         // move the open file since we are not on top of anything clickable
@@ -108,29 +114,24 @@ export default class ContextAwareRenamePlugin extends Plugin {
         }
 
         const linkTypes: LinkTypes = {
-            [linkTypeEnum.external]: () => {},
+            [linkTypeEnum.external]: () => {
+                /* can't move external links */
+            },
             [linkTypeEnum.internal]: async () => {
-                const linkTFile = this.getLinkTFile(token);
-
                 // abort if we can't find the link object for some reason
-                if (!linkTFile) {
-                    return;
-                }
+                const linkTFile = this.getLinkTFile(token);
+                if (!linkTFile) return;
 
                 // open the folder selector
-                const newPath = await new ChooseFolderModal(this.app).open();
-                console.log(
-                    "newPath",
-                    newPath,
-                    "+>",
-                    path.join(newPath, linkTFile.name)
-                );
+                const newFolderPath = await new ChooseFolderModal(
+                    this.app
+                ).open();
 
-                // TODO: option to clean empty folder after moving the file
-                await createDirectory(this.app.vault, newPath);
+                // TODO: consider adding an option to clean empty folder after moving the file
+                await createDirectory(this.app.vault, newFolderPath);
                 this.app.fileManager.renameFile(
                     linkTFile,
-                    path.join(newPath, linkTFile.name)
+                    path.join(newFolderPath, linkTFile.name)
                 );
             },
         };
@@ -145,7 +146,7 @@ export default class ContextAwareRenamePlugin extends Plugin {
      * @returns Returns the `linkTFile` object.
      */
     private getLinkTFile(token: ClickableToken) {
-        const linkPath = this.normalize(token.text).path;
+        const linkPath = this.getPath(token.text);
         const { path: filePath } = this.app.workspace.activeEditor.getFile();
 
         // get the link object itself
@@ -171,25 +172,13 @@ export default class ContextAwareRenamePlugin extends Plugin {
     }
 
     /**
-     * The `normalize` function takes a string value, replaces non-breaking spaces with regular spaces,
-     * normalizes the string using the "NFC" normalization form, splits the string at the "#"
-     * character, and returns an object with the path and subpath.
-     * @param {string} value - A string value that represents a path or URL.
-     * @returns The function `normalize` returns an object with two properties: `path` and `subpath`.
+     * Returns the normalized path without the fragment
+     * identifier.
+     * @param {string} value - The `value` parameter is a string representing a path.
+     * @returns a string.
      */
-    private normalize(value: string): { path: string; subpath: string } {
-        /* // this replaces a non-breaking space with a regular one
-        const nonBreakingSpace = /\u00A0/g;
-        value = value.replace(nonBreakingSpace, " ").normalize("NFC");
-
-        const path = value.split("#")[0]; */
-
-        const path = normalizePath(value).split("#")[0];
-
-        return {
-            path,
-            subpath: value.substring(path.length),
-        };
+    private getPath(value: string): string {
+        return normalizePath(value).split("#")[0];
     }
 
     onunload() {}
