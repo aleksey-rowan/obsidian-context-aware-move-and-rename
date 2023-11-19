@@ -1,55 +1,13 @@
+import { MarkdownFileInfo, Plugin, normalizePath } from "obsidian";
 import {
-    App,
-    Editor,
-    EditorPosition,
-    FileManager,
-    Plugin,
-    MarkdownFileInfo,
-    TFile,
-    Workspace,
-} from "obsidian";
-
-interface ClickableToken {
-    type: linkTypeEnum;
-    text: string;
-    start: EditorPosition;
-    end: EditorPosition;
-}
-
-abstract class EditorExtended extends Editor {
-    abstract getClickableTokenAt(
-        position: EditorPosition
-    ): ClickableToken | null;
-}
-
-abstract class AppExtended extends App {
-    commands: {
-        executeCommandById(id: string): void;
-    };
-    workspace: WorkspaceExtended;
-    fileManager: FileManagerExtended;
-}
-
-abstract class FileManagerExtended extends FileManager {
-    abstract promptForFileRename(file: TFile): void;
-}
-
-abstract class WorkspaceExtended extends Workspace {
-    activeEditor: MarkdownFileInfoExtended;
-}
-
-interface MarkdownFileInfoExtended extends MarkdownFileInfo {
-    getFile(): { path: string };
-}
-
-const enum linkTypeEnum {
-    internal = "internal-link",
-    external = "external-link",
-}
-
-type LinkTypes = {
-    [key in linkTypeEnum]: () => void;
-};
+    AppExtended,
+    EditorExtended,
+    LinkTypes,
+    linkTypeEnum,
+    ClickableToken,
+} from "./types";
+import ChooseFolderModal from "./chooseFolderModal";
+import { createDirectory, path } from "./util";
 
 export default class ContextAwareRenamePlugin extends Plugin {
     app: AppExtended;
@@ -58,13 +16,14 @@ export default class ContextAwareRenamePlugin extends Plugin {
         this.addCommand({
             id: "rename-file-or-link",
             name: "Rename file or link",
-            editorCallback: this.renameFileOrLink.bind(this, 123),
+            editorCallback: this.renameFileOrLink.bind(this),
         });
 
         this.addCommand({
             id: "rename-link-only",
             name: "Rename link only",
-            editorCallback: this.renameLinkOnly.bind(this),
+            editorCallback: (e, v) =>
+                this.renameFileOrLink(e as EditorExtended, v, true),
         });
 
         this.addCommand({
@@ -76,28 +35,37 @@ export default class ContextAwareRenamePlugin extends Plugin {
         this.addCommand({
             id: "move-link-only",
             name: "Move link only",
-            editorCallback: this.moveLinkOnly.bind(this),
+            editorCallback: (e, v) =>
+                this.moveFileOrLink(e as EditorExtended, v, true),
         });
     }
-
-    renameLinkOnly() {}
-    moveLinkOnly() {}
 
     /**
      * The function `renameFileOrLink` renames a file or triggers a rename dialog for a link in a
      * Markdown editor.
-     * @param {EditorExtended} editor - The `editor` parameter is an instance of the `EditorExtended`
+     * @param {EditorExtended} editor - an instance of the `EditorExtended`
      * class, which represents the editor in which the code is being executed. It provides methods for
      * interacting with the editor, such as getting the current cursor position and getting the
      * clickable token at a specific position.
-     * @returns the result of calling `this.app.fileManager.promptForFileRename(link)`.
-     */
-    renameFileOrLink(editor: EditorExtended) {
+     * @param [linkOnly=false] - The `linkOnly` parameter is a boolean flag that determines whether
+     * only the link should be renamed or the entire file. If `linkOnly` is set to `true`, only the
+     * link will be renamed.
+     * */
+    private renameFileOrLink(
+        editor: EditorExtended,
+        v: MarkdownFileInfo,
+        linkOnly = false
+    ) {
         const token = this.getClickableToken(editor);
 
         // rename file since we are not on top of anything clickable
         if (!token) {
-            this.app.commands.executeCommandById("workspace:edit-file-title");
+            // exit if we are only renaming link
+            if (!linkOnly) {
+                this.app.commands.executeCommandById(
+                    "workspace:edit-file-title"
+                );
+            }
             return;
         }
 
@@ -123,21 +91,47 @@ export default class ContextAwareRenamePlugin extends Plugin {
         linkTypes[token.type]();
     }
 
-    moveFileOrLink(editor: EditorExtended) {
+    private moveFileOrLink(
+        editor: EditorExtended,
+        v: MarkdownFileInfo,
+        linkOnly = false
+    ) {
         const token = this.getClickableToken(editor);
 
         // move the open file since we are not on top of anything clickable
         if (!token) {
-            this.app.commands.executeCommandById("file-explorer:move-file");
+            // exit if we are only moving links
+            if (!linkOnly) {
+                this.app.commands.executeCommandById("file-explorer:move-file");
+            }
             return;
         }
 
         const linkTypes: LinkTypes = {
             [linkTypeEnum.external]: () => {},
-            [linkTypeEnum.internal]: () => {
+            [linkTypeEnum.internal]: async () => {
+                const linkTFile = this.getLinkTFile(token);
+
+                // abort if we can't find the link object for some reason
+                if (!linkTFile) {
+                    return;
+                }
+
                 // open the folder selector
-                // rename the file
-                this.app.fileManager.renameFile;
+                const newPath = await new ChooseFolderModal(this.app).open();
+                console.log(
+                    "newPath",
+                    newPath,
+                    "+>",
+                    path.join(newPath, linkTFile.name)
+                );
+
+                // TODO: option to clean empty folder after moving the file
+                await createDirectory(this.app.vault, newPath);
+                this.app.fileManager.renameFile(
+                    linkTFile,
+                    path.join(newPath, linkTFile.name)
+                );
             },
         };
 
@@ -184,12 +178,13 @@ export default class ContextAwareRenamePlugin extends Plugin {
      * @returns The function `normalize` returns an object with two properties: `path` and `subpath`.
      */
     private normalize(value: string): { path: string; subpath: string } {
-        // this replaces a non-breaking space with a regular one
+        /* // this replaces a non-breaking space with a regular one
         const nonBreakingSpace = /\u00A0/g;
-
         value = value.replace(nonBreakingSpace, " ").normalize("NFC");
 
-        const path = value.split("#")[0];
+        const path = value.split("#")[0]; */
+
+        const path = normalizePath(value).split("#")[0];
 
         return {
             path,
