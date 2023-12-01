@@ -1,96 +1,57 @@
-# Obsidian Sample Plugin
+# Obsidian Context-Aware Move and Rename Plugin
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Provides context-aware commands for renaming and moving files or links within the Obsidian markdown editor.
 
-This project uses Typescript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+<p align="center">
+  <img src="./assets/demo.gif" style="width: 80%" />
+</p>
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+### Why?
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+To minimize the use of your keyboard shortcuts end cut down on context switching when manipulating linked notes.
 
-## First time developing plugins?
+In Obsidian, [renaming a link to a note is only possible by using a mouse](https://forum.obsidian.md/t/keyboard-shortcut-to-rename-links-in-a-note/25213) or through the context menu which is not very convenient. And it's not possible to move the linked note without opening it or using a mouse.
 
-Quick starting guide for new plugin devs:
+### Features
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+-   **Context-Aware Renaming:** Rename files or links based on where your cursor is placed within the markdown editor.
+-   **Efficient Link-Only Operations:** Perform link-only renaming or moving operations without the risk of accidentaly affecting the currently opened note.
+-   **Vim-mode Compatible:** Works in vim-mode.
 
-## Releasing new releases
+## Installation
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### Community Plugins
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. Open Obsidian.
+2. Go to "Settings" > "Community plugins."
+3. Search for "Context-Aware Move and Rename"
+4. Click "Install" to enable the plugin.
 
-## Adding your plugin to the community plugin list
+### Manual Installation
 
-- Check https://github.com/obsidianmd/obsidian-releases/blob/master/plugin-review.md
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+1. Download the latest release from the [Releases](https://github.com/aleksey-rowan/obsidian-context-aware-move-and-rename/releases) page.
+2. Extract the zip file into your Obsidian plugins folder.
+3. Reload Obsidian to activate the plugin.
 
-## How to use
+## Usage
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+### Commands
 
-## Manually installing the plugin
+| Command Name        | Command ID            | Description                                                                                                                           |
+| ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Rename File or Link | `rename-file-or-link` | Renames a linked note **under the cursor** OR renames the **currently opened note** otherwise (exactly as the default `F2` shortcut). |
+| Rename Link Only    | `rename-link-only`    | Renames a linked note **under the cursor**. Does nothing otherwise.                                                                   |
+| Move File or Link   | `move-file-or-link`   | Moves a linked note **under the cursor** OR moves the **currently opened note** to a different folder otherwise.                      |
+| Move Link Only      | `move-link-only`      | Moves a linked note **under the cursor** to a different folder. Does nothing otherwise.                                               |
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+### Shortcuts
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+No defaults shortcuts are provided. You can map them however you want, but I recommend using the `F2` shortcut with the `rename-file-or-link`. This way you keep the default behaviour most of the times and gain the ability to quickly rename links under the cursor.
 
-## Funding URL
+## License
 
-You can include funding URLs where people who use your plugin can financially support it.
+This plugin is licensed under the [MIT License](LICENSE).
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+## Acknowledgments
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
+-   Special thanks to **@vanadium23** and his [Obsidian Advanced New File Plugin](https://github.com/vanadium23/obsidian-advanced-new-file/) where I borrowed some of the code for creating a folder selection modal.

@@ -1,11 +1,11 @@
 {
-    "id": "context-aware-rename",
-    "name": "Context Aware Rename",
+    "id": "context-aware-move-and-rename",
+    "name": "Context-Aware Move and Rename",
     "version": "1.0.0",
     "minAppVersion": "0.15.0",
-    "description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
+    "description": "Provides context-aware commands to rename and move files or links based on your cursor position.",
     "author": "Aleksey Rowan",
-    "authorUrl": "https://obsidian.md",
-    "fundingUrl": "https://obsidian.md/pricing",
+    "authorUrl": "https://github.com/aleksey-rowan",
+    "fundingUrl": "https://www.buymeacoffee.com/alekseyrowan",
     "isDesktopOnly": true
 }

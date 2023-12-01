@@ -58,6 +58,7 @@ export default class ContextAwareRenamePlugin extends Plugin {
     ) {
         const token = this.getClickableToken(editor);
 
+        // TODO: consider updating H1 in the note to match the new file title
         // rename file since we are not on top of anything clickable
         if (!token) {
             // exit if we are only renaming link
