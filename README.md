@@ -6,6 +6,8 @@ Provides context-aware commands for renaming and moving files or links within th
   <img src="./assets/demo.gif" style="width: 80%" />
 </p>
 
+In the above example `F2` is mapped to the "Rename File or Link" and `F3` is mapped to the "Move File or Link" commands.
+
 ### Why?
 
 To minimize the use of your keyboard shortcuts end cut down on context switching when manipulating linked notes.
