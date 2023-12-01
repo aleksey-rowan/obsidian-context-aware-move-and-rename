@@ -6,7 +6,7 @@ Provides context-aware commands for renaming and moving files or links within th
   <img src="./assets/demo.gif" style="width: 80%" />
 </p>
 
-In the above example `F2` is mapped to the "Rename File or Link" and `F3` is mapped to the "Move File or Link" commands.
+In the above example `F2` is mapped to the "Rename File or Link" and `F3` is mapped to the "Move File or Link" commands; absolute links are enabled to show folder change of a linked note.
 
 ### Why?
 
@@ -19,21 +19,6 @@ In Obsidian, [renaming a link to a note is only possible by using a mouse](https
 -   **Context-Aware Renaming:** Rename files or links based on where your cursor is placed within the markdown editor.
 -   **Efficient Link-Only Operations:** Perform link-only renaming or moving operations without the risk of accidentaly affecting the currently opened note.
 -   **Vim-mode Compatible:** Works in vim-mode.
-
-## Installation
-
-### Community Plugins
-
-1. Open Obsidian.
-2. Go to "Settings" > "Community plugins."
-3. Search for "Context-Aware Move and Rename"
-4. Click "Install" to enable the plugin.
-
-### Manual Installation
-
-1. Download the latest release from the [Releases](https://github.com/aleksey-rowan/obsidian-context-aware-move-and-rename/releases) page.
-2. Extract the zip file into your Obsidian plugins folder.
-3. Reload Obsidian to activate the plugin.
 
 ## Usage
 
@@ -49,6 +34,21 @@ In Obsidian, [renaming a link to a note is only possible by using a mouse](https
 ### Shortcuts
 
 No defaults shortcuts are provided. You can map them however you want, but I recommend using the `F2` shortcut with the `rename-file-or-link`. This way you keep the default behaviour most of the times and gain the ability to quickly rename links under the cursor.
+
+## Installation
+
+### Community Plugins
+
+1. Open Obsidian.
+2. Go to "Settings" > "Community plugins."
+3. Search for "Context-Aware Move and Rename"
+4. Click "Install" to enable the plugin.
+
+### Manual Installation
+
+1. Download the latest release from the [Releases](https://github.com/aleksey-rowan/obsidian-context-aware-move-and-rename/releases) page.
+2. Extract the zip file into your Obsidian plugins folder.
+3. Reload Obsidian to activate the plugin.
 
 ## License
 
